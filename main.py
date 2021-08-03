@@ -43,6 +43,9 @@ class Projector():
         self.ax_base.imshow(self.base)
         self.ax_initial.imshow(self.initial)
 
+        self.plot_points_base = self.ax_base.plot([0],[0],'+r')[0]
+        self.plot_points_initial = self.ax_initial.plot([0],[0],'r+')[0]
+
         self.fig.canvas.mpl_connect('button_press_event', self.on_click)
         self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
 
@@ -53,40 +56,57 @@ class Projector():
 
     def on_key_press(self, event):
         if event.key == self.delete_key:
-            self.delete_key = 1 - self.delete_key
+            self.delete = 1 - self.delete
         elif event.key ==self.go_back_key:
             print('To implement')
+
 
     def on_click(self, event):
         if event.button != 3:
             return
+
         if event.inaxes == self.ax_initial:
-            self.fixed_points_initial = \
-                self.modify_fixed_points(event.xdata, event.ydata, self.fixed_points_initial)
+            if self.delete:
+                self.delete_fixed_points(event.xdata, event.ydata, self.fixed_points_initial)
+            elif len(self.fixed_points_initial)>len(self.fixed_points_base):
+                self.fixed_points_initial[-1][0] = event.xdata
+                self.fixed_points_initial[-1][1] = event.ydata
+            else:
+                self.fixed_points_initial.append([event.xdata, event.ydata])
+
         elif event.inaxes == self.ax_base:
-            self.fixed_points_base = \
-                self.modify_fixed_points(event.xdata, event.ydata, self.fixed_points_base)
+            if self.delete:
+                self.delete_fixed_points(event.xdata, event.ydata, self.fixed_points_base)
+            elif len(self.fixed_points_initial)<len(self.fixed_points_base):
+                self.fixed_points_base[-1][0] = event.xdata
+                self.fixed_points_base[-1][1] = event.ydata
+            else:
+                self.fixed_points_base.append([event.xdata, event.ydata])
         else:
             return
 
-        self.update_fixed_points_plot(self)
+        self.update_fixed_points_plot()
 
 
-    def modify_fixed_points(self, x, y, fixed_points):
-        if self.delete and self.fixed_points == []:
+    def delete_fixed_points(self, x, y, fixed_points):
+        if fixed_points == []:
             return
-        if self.delete:
-            distances = fixed_points - np.array([x, y])
-            distances = np.linalg.norm(distances, axis=1)
-            closest_index = np.argmin(distances)
-    def modify_base_fixed_points(self, x, y):
-
+        fixed_points = np.array(fixed_points)
+        distances = fixed_points - np.array([x, y])
+        distances = np.linalg.norm(distances, axis=1)
+        closest_index = np.argmin(distances)
+        if len(self.fixed_points_base)>closest_index:
+            self.fixed_points_base.pop(closest_index)
+        if len(self.fixed_points_initial)>closest_index:
+            self.fixed_points_initial.pop(closest_index)
 
 
     def update_fixed_points_plot(self):
-        self.ax_initial.plot(self.fixed_points_initial[:0], self.fixed_points_initial[:1], '.')
-        self.ax_base.plot(self.fixed_points_base[:0], self.fixed_points_base[:1], '.')
-        self.fig.draw()
+        self.plot_points_initial.set_data([point[0] for point in self.fixed_points_initial],
+                                          [point[1] for point in self.fixed_points_initial])
+        self.plot_points_base.set_data([point[0] for point in self.fixed_points_base],
+                                       [point[1] for point in self.fixed_points_base])
+        self.fig.canvas.draw()
 
 
 if __name__ == '__main__':
