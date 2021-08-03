@@ -9,10 +9,6 @@ def show_image(path='data/eu4_map.png'):
     plt.imshow(img)
     plt.show()
 
-def remove_last_none(array):
-    if None in array[-1]:
-        return array[:-1]
-
 
 class Projector():
     def __init__(self, base_path='data/eu4_map.png', to_project_path='data/chinese_provinces.png'):
