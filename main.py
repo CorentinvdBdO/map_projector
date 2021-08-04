@@ -20,6 +20,9 @@ def indices_by_closest(vectors, vec):
     u, ind = np.unique(distances, return_index=True)
     return ind
 
+def compute_forces(grid_pos, activated_points):
+    return
+
 class Projector():
     def __init__(self, base_path='data/eu4_map.png', to_project_path='data/chinese_provinces.png'):
         # Basic data
@@ -46,10 +49,10 @@ class Projector():
         self.ax_deformed = self.fig.add_subplot(2, 2, 3)
         self.ax_superposed = self.fig.add_subplot(2, 2, 4)
 
-        self.ax_base.axis('off')
+        """self.ax_base.axis('off')
         self.ax_initial.axis('off')
         self.ax_deformed.axis('off')
-        self.ax_superposed.axis('off')
+        self.ax_superposed.axis('off')"""
 
         # Plot original images
         self.ax_base.imshow(self.base)
@@ -68,24 +71,27 @@ class Projector():
     def build_model(self):
         grid = np.array([[i, j] for j in range(self.initial_x) for i in range(self.initial_y)])
         normalizer = normalize(grid)
-        self.model = build_model(normalizer, [100])
+        self.model = build_model(normalizer, [100, 100, 100])
 
     def fit(self):
         n_examples = min(len(self.fixed_points_initial), len(self.fixed_points_base))
-        train_features = np.array(self.fixed_points_initial[:n_examples])
+
+        grid_initial = np.array([[i, j] for j in range(0,self.initial_x, 10) for i in range(0,self.initial_y, 10)]) / np.array([self.initial_x, self.initial_y])
+
+        self.model.fit(grid_initial, grid_initial, epochs=100)
+
+        """train_features = np.array(self.fixed_points_initial[:n_examples])
         train_labels = np.array(self.fixed_points_base[:n_examples]) / np.array([self.base_x, self.base_y])
+        
         self.model.fit(train_features, train_labels, epochs=100)
         prediction = self.model.predict(train_features)
         print(train_labels)
-        print(prediction)
+        print(prediction)"""
 
     def predict_grid_nn(self):
-        if len(self.fixed_points_base) < 3 or len(self.fixed_points_initial) < 3:
-            print('Need more points')
-            return
         grid = np.array([[i, j] for j in range(self.initial_x) for i in range(self.initial_y)])
-        simulated = self.model.predict(grid) * np.array([self.base_x, self.base_y])
-        self.ax_base.plot(simulated[:, 0], simulated[:, 1], '.')
+        simulated = self.model.predict(grid) * np.array([self.initial_x, self.initial_y])
+        self.ax_initial.plot(simulated[:, 0], simulated[:, 1], '.')
         self.fig.canvas.draw()
 
     def predict_point_initial_triangulation(self, point):
@@ -200,11 +206,6 @@ class Projector():
 
 
 def normalize(data):
-    """
-    Takes a DataFrame and returns an adapted Keras normalizer.
-    :param data: (pandas DataFrame) features DataFrame to normalize
-    :return normalizer: (keras normalizer object) normalizer
-    """
     normalizer = tf.keras.layers.experimental.preprocessing.Normalization()
     normalizer.adapt(np.array(data))
     return normalizer
